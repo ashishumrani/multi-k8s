@@ -19,7 +19,7 @@ before_install:
     # setting the correct gcloud project and compute zone and getting credentials for the clusterfor this deployment
     - gcloud config set project multi-k8s-262616
     - gcloud config set compute/zone us-west1-a
-    - gcloud container clusters get credentials multi-cluster
+    - gcloud container clusters get-credentials multi-cluster
 
     # the folowing command will log us in into the docker.  We will have repositor there
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
