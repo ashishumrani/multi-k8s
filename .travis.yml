@@ -1,8 +1,42 @@
 sudo: required
 services:
     - docker
+env:
+    global:
+        - SHA=$(git rev-parse HEAD)
+
+        # the following env sets the gcloud not to promt during build
+        - CLOUDSDK_CORE_DISABLE_PROMPTS=1
 before_install:
+    - openssl aes-256-cbc -K $encrypted_0c35eebf403c_key -iv $encrypted_0c35eebf403c_iv -in service-account.json.enc -out service-account.json -d
+
+    # this command will install the gclod SDK on the travis
     - curl https://sdk.cloud.google.com | bash > /dev/null;
     - source $HOME/google-cloud-sdk/path.bash.inc
     - gcloud components update kubectl
     - gloud  auth activate-service-account --key-file services-account.json
+
+    # setting the correct gcloud project and compute zone and getting credentials for the clusterfor this deployment
+    - gcloud config set project multi-k8s-262616
+    - gcloud config set compute/zone us-west1-a
+    - gcloud container clusters get credentials multi-cluster
+
+    # the folowing command will log us in into the docker.  We will have repositor there
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+    # the following command will build the client container
+    - docker build -t ashishumrani/react-test -f ./client/Dockerfile.dev ./client
+
+# this script will test the client.  We dont care about it. but its justa template
+script:
+    - docker run ashishumrani/react-test npm test -- --coverage
+
+deploy:
+    # provider script means we are responsible for deploying the code to Kubernetese.  There is no default provider for kubernetese
+    provider: script
+    script: bash ./deploy.sh
+
+    #the on claus is telling that the deploy script should run only on master branch and no other branch
+    on:
+        branch: master
+
